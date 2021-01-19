@@ -1,0 +1,66 @@
+version: '3.3'
+services:
+  es_01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
+    container_name: es_01
+    environment:
+      - cluster.name=es_01
+      - node.name=es_01
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms128m -Xmx128m"
+      - discovery.seed_hosts=es_02
+      - cluster.initial_master_nodes=es_01,es_02
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es7data1:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - es7net
+  es_02:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
+    container_name: es_02
+    environment:
+      - cluster.name=es_02
+      - node.name=es_02
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms128m -Xmx128m"
+      - discovery.seed_hosts=es_01
+      - cluster.initial_master_nodes=es_01,es_02
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es7data2:/usr/share/elasticsearch/data
+    networks:
+      - es7net
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.10.1
+    container_name: kibana7
+    environment:
+      - I18N_LOCALE=zh-CN
+      - XPACK_GRAPH_ENABLED=true
+      - TIMELION_ENABLED=true
+      - XPACK_MONITORING_COLLECTION_ENABLED="true"
+      - ELASTICSEARCH_URL=http://119.45.184.226:9200
+    ports:
+      - "5601:5601"
+    restart: always
+    links:
+      - es_01:elasticsearch
+      - es_02:elasticsearch
+    networks:
+      - es7net
+volumes:
+  es7data1:
+    driver: local
+  es7data2:
+    driver: local
+
+networks:
+  es7net:
+    driver: bridge
